@@ -1,7 +1,7 @@
 <?php
 /*
  * @package   plg_system_radicalmultifieldyoopro
- * @version   1.0
+ * @version   1.0.0
  * @author    Dmitriy Vasyukov - https://fictionlabs.ru
  * @copyright Copyright (c) 2021 Fictionlabs. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
@@ -9,6 +9,7 @@
  */
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\Installer\InstallerAdapter;
 
 // no direct access
 defined( '_JEXEC' ) or die( 'Restricted access' );
@@ -30,11 +31,9 @@ class plgSystemRadicalMultiFieldYooProInstallerScript
 
 	function postflight( $type, $parent )
 	{
-		echo $type;
-
 		// Enable plugin
-		if ($type == 'install') {
-
+		if ($type == 'install')
+		{
 			// Prepare plugin object
 			$plugin           = new stdClass();
 			$plugin->type     = 'plugin';

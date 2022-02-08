@@ -1,7 +1,7 @@
 <?php
 /*
  * @package   plg_system_radicalmultifieldyoopro
- * @version   1.0
+ * @version   1.0.0
  * @author    Dmitriy Vasyukov - https://fictionlabs.ru
  * @copyright Copyright (c) 2021 Fictionlabs. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
@@ -12,37 +12,43 @@ namespace YOOtheme\Builder\Joomla\RadicalMultiField\Type;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Plugin\PluginHelper;
-use Joomla\Component\Users\Administrator\Helper\UsersHelper;
+use YOOtheme\Builder\Joomla\Fields\FieldsHelper;
 use YOOtheme\Builder\Source;
 use YOOtheme\Event;
 use YOOtheme\Str;
 
+
 class FieldsType
 {
-    /**
-     * @var string
-     */
-    protected $context;
 
-    /**
-     * Constructor.
-     *
-     * @param string $context
-     */
-    public function __construct($context)
+	/**
+	 * @var string
+	 * @since 1.0.0
+	 */
+	protected $context;
+
+
+	/**
+	 * @param $context
+	 * @since 1.0.0
+	 */
+	public function __construct($context)
     {
         $this->context = $context;
     }
 
-    /**
-     * @param Source $source
-     * @param string $type
-     * @param string $context
-     * @param array  $fields
-     *
-     * @return array
-     */
-    public static function config(Source $source, $type, $context, array $fields)
+
+	/**
+	 * @param   Source  $source
+	 * @param           $type
+	 * @param           $context
+	 * @param   array   $fields
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.0
+	 */
+	public static function config(Source $source, $type, $context, array $fields)
     {
     	return [
             'fields' => array_filter(array_reduce($fields, function ($fields, $field) use ($source, $type, $context) {
@@ -72,7 +78,19 @@ class FieldsType
         ];
     }
 
-    protected static function configFields($field, array $config, Source $source, $context, $type)
+
+	/**
+	 * @param           $field
+	 * @param   array   $config
+	 * @param   Source  $source
+	 * @param           $context
+	 * @param           $type
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function configFields($field, array $config, Source $source, $context, $type)
     {
         $fields = [];
 
@@ -82,12 +100,22 @@ class FieldsType
         return $fields;
     }
 
-    protected static function configRadicalMultiField($field, array $config, Source $source)
+
+	/**
+	 * @param           $field
+	 * @param   array   $config
+	 * @param   Source  $source
+	 *
+	 * @return array|array[]|void
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function configRadicalMultiField($field, array $config, Source $source)
     {
         $fields = [];
 
-        foreach ((array) $field->fieldparams->get('listtype') as $key => $params) {
-
+        foreach ((array) $field->fieldparams->get('listtype') as $key => $params)
+		{
             $fields[$params->name] = [
                 'type' => $params->type === 'media' ? 'MediaField' : 'String',
                 'name' => Str::snakeCase($params->name),
@@ -96,10 +124,10 @@ class FieldsType
                     'filters' => !in_array($params->type, ['media', 'number']) ? ['limit'] : [],
                 ],
             ];
-
         }
 
-        if ($fields) {
+        if ($fields)
+		{
             $name = Str::camelCase(['Field', $field->name], true);
             $source->objectType($name, compact('fields'));
 
@@ -107,33 +135,71 @@ class FieldsType
         }
     }
 
-    public static function field($item, $args, $ctx, $info)
+
+	/**
+	 * @param $item
+	 * @param $args
+	 * @param $ctx
+	 * @param $info
+	 *
+	 * @return mixed
+	 *
+	 * @since 1.0.0
+	 */
+	public static function field($item, $args, $ctx, $info)
     {
         return $item;
     }
 
-    public function resolve($item, $args, $ctx, $info)
+
+	/**
+	 * Resolve after render
+	 *
+	 * @param $item
+	 * @param $args
+	 * @param $ctx
+	 * @param $info
+	 *
+	 * @return array[]|void
+	 *
+	 * @since 1.0.0
+	 */
+	public function resolve($item, $args, $ctx, $info)
     {
-        if (!isset($item->id) || !$field = $this->getField($info->fieldName, $item, $this->context)) {
+		$name = str_replace('String', '', strtr($info->fieldName, '_', '-'));
+
+        if (!isset($item->id) || !$field = $this->getField($name, $item, $this->context))
+		{
             return;
         }
 
         return $this->resolveRadicalMultiField($field);
     }
 
-    public function resolveRadicalMultiField($field)
+
+	/**
+	 * @param $field
+	 *
+	 * @return array[]
+	 *
+	 * @since 1.0.0
+	 */
+	public function resolveRadicalMultiField($field)
     {
 	    $fields = [];
-        foreach ($field->fieldparams->get('listtype', []) as $subField) {
+        foreach ($field->fieldparams->get('listtype', []) as $subField)
+		{
             $fields[$subField->name] = $subField->type;
         }
 
-        return array_map(function ($vals) use ($fields) {
-
+        return array_map(function ($vals) use ($fields)
+        {
             $values = [];
 
-            foreach ($vals as $name => $value) {
-                if ($fields[$name] === 'media') {
+            foreach ($vals as $name => $value)
+			{
+                if ($fields[$name] === 'media')
+				{
                     $values[Str::snakeCase($name)] = ['imagefile' => $value];
                 } else {
                     $values[Str::snakeCase($name)] = $value;
@@ -145,24 +211,50 @@ class FieldsType
         }, array_values(json_decode($field->rawvalue, true) ?: []));
     }
 
-    public static function getField($name, $item, $context)
+
+	/**
+	 * Check current field in the field list of article
+	 *
+	 * @param $name
+	 * @param $item
+	 * @param $context
+	 *
+	 * @return mixed|null
+	 *
+	 * @since 1.0.0
+	 */
+	public static function getField($name, $item, $context)
     {
         $fields = static::getFields($item, $context);
 
         return isset($fields[$name]) ? $fields[$name] : null;
     }
 
-    protected static function getFields($item, $context)
+
+	/**
+	 * Get article fields
+	 *
+	 * @param $item
+	 * @param $context
+	 *
+	 * @return array
+	 *
+	 * @throws \Exception
+	 * @since 1.0.0
+	 */
+	protected static function getFields($item, $context)
     {
-        if (!isset($item->_fields)) {
+        if (!isset($item->_fields))
+		{
 
             PluginHelper::importPlugin('fields');
 
             $item->_fields = [];
 
-            foreach (isset($item->jcfields) ? $item->jcfields : FieldsHelper::getFields($context, $item) as $field) {
-
-                if (!isset($item->jcfields)) {
+            foreach (isset($item->jcfields) ? $item->jcfields : FieldsHelper::getFields($context, $item) as $field)
+			{
+                if (!isset($item->jcfields))
+				{
                     Factory::getApplication()->triggerEvent('onCustomFieldsBeforePrepareField', [$context, $item, &$field]);
                 }
 
