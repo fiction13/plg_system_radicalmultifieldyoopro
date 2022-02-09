@@ -21,9 +21,6 @@ class plgSystemRadicalMultiFieldYooPro extends CMSPlugin
             return;
         }
 
-        // register alias
-		class_alias(App::class, YOOtheme\RadicalMultiField::class);
-
 		// register plugin
 		JLoader::registerNamespace('YOOtheme\\Builder\\Joomla\\RadicalMultiField\\', __DIR__ . '/src', false, false, 'psr4');
 

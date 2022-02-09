@@ -50,9 +50,11 @@ class FieldsType
 	 */
 	public static function config(Source $source, $type, $context, array $fields)
     {
-    	return [
-            'fields' => array_filter(array_reduce($fields, function ($fields, $field) use ($source, $type, $context) {
+		$type = 'Article.RadicalMultifield';
 
+    	return [
+            'fields' => array_filter(array_reduce($fields, function ($fields, $field) use ($source, $type, $context)
+            {
                 return $fields + static::configFields($field, [
                     'type' => 'String',
                     'name' => strtr($field->name, '-', '_'),
@@ -165,7 +167,7 @@ class FieldsType
 	 * @since 1.0.0
 	 */
 	public function resolve($item, $args, $ctx, $info)
-    {
+	{
 		$name = str_replace('String', '', strtr($info->fieldName, '_', '-'));
 
         if (!isset($item->id) || !$field = $this->getField($name, $item, $this->context))
