@@ -1,9 +1,9 @@
 <?php
 /*
  * @package   plg_system_radicalmultifieldyoopro
- * @version   1.0.1
+ * @version   1.0
  * @author    Dmitriy Vasyukov - https://fictionlabs.ru
- * @copyright Copyright (c) 2021 Fictionlabs. All rights reserved.
+ * @copyright Copyright (c) 2024 Fictionlabs. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
  * @link      https://fictionlabs.ru/
  */

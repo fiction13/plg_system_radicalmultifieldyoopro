@@ -1,29 +1,25 @@
 <?php
 /*
  * @package   plg_system_radicalmultifieldyoopro
- * @version   1.0.1
+ * @version   1.0
  * @author    Dmitriy Vasyukov - https://fictionlabs.ru
- * @copyright Copyright (c) 2021 Fictionlabs. All rights reserved.
+ * @copyright Copyright (c) 2024 Fictionlabs. All rights reserved.
  * @license   GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
  * @link      https://fictionlabs.ru/
  */
 
-namespace YOOtheme\Builder\Joomla\RadicalMultiField;
+namespace Joomla\Plugin\System\RadicalMultifieldYooPro\Provider;
 
 use YOOtheme\Builder\Joomla\Fields\FieldsHelper;
+use YOOtheme\Builder\Source;
 
 class SourceListener
 {
     /**
      * @param Source $source
      */
-    public static function initSource($source)
+    public static function handle($source)
     {
-        if (!class_exists(\FieldsHelper::class))
-		{
-            return;
-        }
-
         $fields = array();
         $articleFields = FieldsHelper::getFields('com_content.article');
 

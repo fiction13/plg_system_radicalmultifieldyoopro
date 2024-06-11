@@ -1,2 +1,7 @@
 .idea
-build
+.vscode
+.phing
+.packages
+node_modules
+package-lock.json
+com_jatoms/media
