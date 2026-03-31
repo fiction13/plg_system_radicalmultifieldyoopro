@@ -10,7 +10,7 @@
 
 namespace Joomla\Plugin\System\RadicalMultifieldYooPro\Provider;
 
-use YOOtheme\Builder\Joomla\Fields\FieldsHelper;
+use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
 use YOOtheme\Builder\Source;
 
 class SourceListener
