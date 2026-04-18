@@ -12,7 +12,7 @@ namespace Joomla\Plugin\System\RadicalMultifieldYooPro\Provider\Type;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Plugin\PluginHelper;
-use YOOtheme\Builder\Joomla\Fields\FieldsHelper;
+use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
 use YOOtheme\Builder\Source;
 use YOOtheme\Event;
 use YOOtheme\Str;
