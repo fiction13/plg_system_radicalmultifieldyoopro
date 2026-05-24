@@ -14,8 +14,8 @@ use Joomla\Plugin\System\RadicalMultifieldYooPro\Provider\SourceListener;
 
 return [
 	'events' => [
-		'source.init' => [
-			SourceListener::class => ['@handle', -20],
+		'source.com_fields.field' => [
+			SourceListener::class => ['config', -20],
 		]
 	]
 ];

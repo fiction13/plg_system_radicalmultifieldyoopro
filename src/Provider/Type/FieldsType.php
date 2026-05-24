@@ -10,271 +10,245 @@
 
 namespace Joomla\Plugin\System\RadicalMultifieldYooPro\Provider\Type;
 
-use Joomla\CMS\Factory;
-use Joomla\CMS\Plugin\PluginHelper;
-use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
+use YOOtheme\Builder\Joomla\Fields\Type\FieldsType as JoomlaFieldsType;
 use YOOtheme\Builder\Source;
-use YOOtheme\Event;
 use YOOtheme\Str;
-
 
 class FieldsType
 {
+	protected const MEDIA_FIELD_TYPE = 'RadicalMultifieldMediaField';
 
-    /**
-     * @var string
-     * @since 1.0.0
-     */
-    protected $context;
+	/**
+	 * @param   array   $config
+	 * @param   object  $field
+	 * @param   Source  $source
+	 * @param   string  $context
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.0
+	 */
+	public static function config(array $config, object $field, Source $source, string $context): array
+	{
+		$fields = [];
+		$hasMedia = false;
 
+		foreach ((array) $field->fieldparams->get('listtype', []) as $params)
+		{
+			$params = (object) $params;
 
-    /**
-     * @param $context
-     *
-     * @since 1.0.0
-     */
-    public function __construct($context)
-    {
-        $this->context = $context;
-    }
+			if (empty($params->name))
+			{
+				continue;
+			}
 
+			$name          = Str::snakeCase($params->name);
+			$type          = $params->type ?? 'text';
+			$hasMedia      = $hasMedia || $type === 'media';
+			$fields[$name] = [
+				'type'     => $type === 'media' ? self::MEDIA_FIELD_TYPE : 'String',
+				'name'     => $name,
+				'metadata' => [
+					'label'   => $params->title ?? $params->name,
+					'filters' => !in_array($type, ['media', 'number'], true) ? ['limit'] : [],
+					'group'   => $field->group_title,
+				],
+			];
+		}
 
-    /**
-     * @param   Source  $source
-     * @param           $type
-     * @param           $context
-     * @param   array   $fields
-     *
-     * @return array
-     *
-     * @since 1.0.0
-     */
-    public static function config(Source $source, $type, $context, array $fields)
-    {
-        $type = 'Article.RadicalMultifield';
+		if (!$fields)
+		{
+			return $config;
+		}
 
-        return [
-            'fields' => array_filter(
-                array_reduce(
-                    $fields,
-                    fn($fields, $field) => $fields +
-                        static::configFields(
-                            $field,
-                            [
-                                'type'       => 'String',
-                                'name'       => strtr($field->name, '-', '_'),
-                                'metadata'   => [
-                                    'label' => $field->title,
-                                    'group' => $field->group_title,
-                                ],
-                                'extensions' => [
-                                    'call' => "{$type}.fields@resolve",
-                                ],
-                            ],
-                            $source,
-                            $context,
-                            $type,
-                        ),
-                    [],
-                ),
-            ),
+		if ($hasMedia)
+		{
+			static::configMediaField($source);
+		}
 
-            'extensions' => [
-                'bind' => [
-                    "{$type}.fields" => [
-                        'class' => __CLASS__,
-                        'args'  => ['$context' => $context],
-                    ],
-                ],
-            ],
-        ];
-    }
+		$name = Str::camelCase(['Field', $field->name], true);
+		$source->objectType($name, compact('fields'));
 
+		$config['type']               = ['listOf' => $name];
+		$config['extensions']['call'] = [
+			'func' => [static::class, 'resolve'],
+			'args' => [
+				'context' => $context,
+				'name'    => $field->name,
+			],
+		];
 
-    /**
-     * @param           $field
-     * @param   array   $config
-     * @param   Source  $source
-     * @param           $context
-     * @param           $type
-     *
-     * @return array
-     *
-     * @since 1.0.0
-     */
-    protected static function configFields($field, array $config, Source $source, $context, $type)
-    {
-        $fields               = [];
-        $config               = static::configRadicalMultiField($field, $config, $source);
-        $fields[$field->name] = Event::emit('source.com_fields.field|filter', $config, $field, $source, $context);
+		return $config;
+	}
 
-        return $fields;
-    }
+	/**
+	 * @param   Source  $source
+	 *
+	 * @return void
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function configMediaField(Source $source): void
+	{
+		$source->objectType(self::MEDIA_FIELD_TYPE, [
+			'fields' => [
+				'imagefile' => [
+					'type'       => 'String',
+					'metadata'   => [
+						'label' => '',
+					],
+					'extensions' => [
+						'call' => [
+							'func' => [static::class, 'imagefile'],
+						],
+					],
+				],
+			],
+		]);
+	}
 
+	/**
+	 * @param   object|null  $item
+	 * @param   array       $args
+	 *
+	 * @return array|null
+	 *
+	 * @since 1.0.0
+	 */
+	public static function resolve($item, array $args): ?array
+	{
+		if (!isset($item->id))
+		{
+			return null;
+		}
 
-    /**
-     * @param           $field
-     * @param   array   $config
-     * @param   Source  $source
-     *
-     * @return array|array[]|void
-     *
-     * @since 1.0.0
-     */
-    protected static function configRadicalMultiField($field, array $config, Source $source)
-    {
-        $fields = [];
+		$field = JoomlaFieldsType::getField($args['name'], $item, $args['context']);
 
-        foreach ((array) $field->fieldparams->get('listtype') as $key => $params)
-        {
-            $fields[$params->name] = [
-                'type'     => $params->type === 'media' ? 'MediaField' : 'String',
-                'name'     => Str::snakeCase($params->name),
-                'metadata' => [
-                    'label'   => $params->title,
-                    'filters' => !in_array($params->type, ['media', 'number']) ? ['limit'] : [],
-                    'group'   => $field->group_title,
-                ],
-            ];
-        }
+		return $field ? static::resolveRadicalMultiField($field) : null;
+	}
 
-        if ($fields)
-        {
-            $name = Str::camelCase(['Field', $field->name], true);
-            $source->objectType($name, compact('fields'));
+	/**
+	 * @param   object  $field
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function resolveRadicalMultiField(object $field): array
+	{
+		$types = [];
 
-            return ['type' => ['listOf' => $name]] + $config;
-        }
-    }
+		foreach ((array) $field->fieldparams->get('listtype', []) as $subField)
+		{
+			$subField = (object) $subField;
 
+			if (!empty($subField->name))
+			{
+				$type = $subField->type ?? 'text';
 
-    /**
-     * @param $item
-     * @param $args
-     * @param $ctx
-     * @param $info
-     *
-     * @return mixed
-     *
-     * @since 1.0.0
-     */
-    public static function field($item, $args, $ctx, $info)
-    {
-        return $item;
-    }
+				$types[$subField->name] = $type;
+				$types[Str::snakeCase($subField->name)] = $type;
+			}
+		}
 
+		return array_values(array_map(
+			fn($values) => static::resolveRow((array) $values, $types),
+			static::normalizeRows($field->rawvalue, $types)
+		));
+	}
 
-    /**
-     * Resolve after render
-     *
-     * @param $item
-     * @param $args
-     * @param $ctx
-     * @param $info
-     *
-     * @return array[]|void
-     *
-     * @since 1.0.0
-     */
-    public function resolve($item, $args, $ctx, $info)
-    {
-        $name = str_replace('String', '', strtr($info->fieldName, '_', '-'));
+	/**
+	 * @param   mixed  $value
+	 * @param   array  $types
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function normalizeRows($value, array $types): array
+	{
+		if (is_string($value))
+		{
+			$value = json_decode($value, true);
+		}
 
-        if (!isset($item->id) || !$field = $this->getField($name, $item, $this->context))
-        {
-            return;
-        }
+		if (!is_array($value))
+		{
+			return [];
+		}
 
-        return $this->resolveRadicalMultiField($field);
-    }
+		if (array_intersect(array_keys($value), array_keys($types)))
+		{
+			return [$value];
+		}
 
+		return array_filter($value, 'is_array');
+	}
 
-    /**
-     * @param $field
-     *
-     * @return array[]
-     *
-     * @since 1.0.0
-     */
-    public function resolveRadicalMultiField($field)
-    {
-        $fields = [];
-        foreach ($field->fieldparams->get('listtype', []) as $subField)
-        {
-            $fields[$subField->name] = $subField->type;
-        }
+	/**
+	 * @param   array  $values
+	 * @param   array  $types
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function resolveRow(array $values, array $types): array
+	{
+		$result = [];
 
-        return array_map(function ($vals) use ($fields) {
-            $values = [];
+		foreach ($values as $name => $value)
+		{
+			$key = Str::snakeCase($name);
 
-            foreach ($vals as $name => $value)
-            {
-                if ($fields[$name] === 'media')
-                {
-                    $values[Str::snakeCase($name)] = ['imagefile' => $value];
-                }
-                else
-                {
-                    $values[Str::snakeCase($name)] = $value;
-                }
-            }
+			if (($types[$name] ?? null) === 'media')
+			{
+				$result[$key] = static::resolveMedia($value);
+				continue;
+			}
 
-            return $values;
+			$result[$key] = $value;
+		}
 
-        }, array_values(json_decode($field->rawvalue, true) ?: []));
-    }
+		return $result;
+	}
 
+	/**
+	 * @param   mixed  $value
+	 *
+	 * @return array|null
+	 *
+	 * @since 1.0.0
+	 */
+	protected static function resolveMedia($value): ?array
+	{
+		if (is_array($value))
+		{
+			return $value;
+		}
 
-    /**
-     * Check current field in the field list of article
-     *
-     * @param $name
-     * @param $item
-     * @param $context
-     *
-     * @return mixed|null
-     *
-     * @since 1.0.0
-     */
-    public static function getField($name, $item, $context)
-    {
-        $fields = static::getFields($item, $context);
+		if (!is_string($value) || $value === '')
+		{
+			return null;
+		}
 
-        return isset($fields[$name]) ? $fields[$name] : null;
-    }
+		if (str_starts_with($value, '{'))
+		{
+			return json_decode($value, true);
+		}
 
+		return ['imagefile' => $value];
+	}
 
-    /**
-     * Get article fields
-     *
-     * @param $item
-     * @param $context
-     *
-     * @return array
-     *
-     * @throws \Exception
-     * @since 1.0.0
-     */
-    protected static function getFields($item, $context)
-    {
-        if (!isset($item->_fields))
-        {
-
-            PluginHelper::importPlugin('fields');
-
-            $item->_fields = [];
-
-            foreach (isset($item->jcfields) ? $item->jcfields : FieldsHelper::getFields($context, $item) as $field)
-            {
-                if (!isset($item->jcfields))
-                {
-                    Factory::getApplication()->triggerEvent('onCustomFieldsBeforePrepareField', [$context, $item, &$field]);
-                }
-
-                $item->_fields[$field->name] = $field;
-            }
-        }
-
-        return $item->_fields;
-    }
+	/**
+	 * @param   array  $image
+	 *
+	 * @return string|null
+	 *
+	 * @since 1.0.0
+	 */
+	public static function imagefile(array $image): ?string
+	{
+		return rawurldecode($image['imagefile'] ?? '') ?: null;
+	}
 }

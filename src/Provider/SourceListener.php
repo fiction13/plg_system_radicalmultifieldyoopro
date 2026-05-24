@@ -10,61 +10,27 @@
 
 namespace Joomla\Plugin\System\RadicalMultifieldYooPro\Provider;
 
-use Joomla\Component\Fields\Administrator\Helper\FieldsHelper;
 use YOOtheme\Builder\Source;
 
 class SourceListener
 {
-    /**
-     * @param Source $source
-     */
-    public static function handle($source)
-    {
-        $fields = array();
-        $articleFields = FieldsHelper::getFields('com_content.article');
-
-        foreach ($articleFields as $field)
-		{
-            if ($field->state == 1 && $field->type === 'radicalmultifield')
-			{
-                $fields[$field->name] = $field;
-            }
-        }
-
-        if ($fields)
-		{
-        	static::configFields($source, 'Article', 'com_content.article', $fields);
-        }
-    }
-
-
 	/**
-	 * @param          $source
-	 * @param          $type
-	 * @param          $context
-	 * @param   array  $fields
+	 * @param   array|null  $config
+	 * @param   object      $field
+	 * @param   Source      $source
+	 * @param   string      $context
 	 *
+	 * @return array|null
 	 *
 	 * @since 1.0.0
 	 */
-	protected static function configFields($source, $type, $context, array $fields)
-    {
-        // add field on type
-        $source->objectType($type, $config = [
-            'fields' => [
-                'field' => [
-                    'type' => $fieldType = "{$type}Fields",
-                    'metadata' => [
-                        'label' => 'Fields',
-                    ],
-                    'extensions' => [
-                        'call' => Type\FieldsType::class . '::field',
-                    ],
-                ],
-            ],
-        ]);
+	public static function config($config, $field, Source $source, string $context)
+	{
+		if (!$config || $field->type !== 'radicalmultifield')
+		{
+			return $config;
+		}
 
-        // configure field type
-        $source->objectType($fieldType, Type\FieldsType::config($source, $type, $context, $fields));
-    }
+		return Type\FieldsType::config($config, $field, $source, $context);
+	}
 }
